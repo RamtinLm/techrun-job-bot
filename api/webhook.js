@@ -1,4 +1,4 @@
-const { formatJobPost } = require('./src/formatter')
+const { formatJobPost } = require('../src/formatter')
 async function sendMessage(chatID, text) {
     await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
