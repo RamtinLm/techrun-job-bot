@@ -1,23 +1,27 @@
 require('dotenv').config()
 
-const apiKey = process.env.ANTHROPIC_API_KEY
+const apiKey = process.env.OPENROUTER_API_KEY
 
 async function formatJobPost(jobPosting) {
-    const response = await fetch(`https://api.anthropic.com/v1/messages`, {
+    const response = await fetch(`https://openrouter.ai/api/v1/chat/completions`, {
         method: 'POST',
         headers: {
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
+            "Authorization": `Bearer ${apiKey}`,
             "content-type": "application/json",
         },
         body: JSON.stringify({
-            model: "claude-haiku-4-5",
+            model: "openrouter/free",
             "max_tokens": 1000,
-            system: "You are a job post formatter for a Toronto tech community Telegram group. A member will send you a raw job posting — it could be a LinkedIn post, a job board description, a link with some context, or a quick message. Extract and return ONLY this format, nothing else:\n\n#hiring\n\n🏢 Company: [company name or 'Not specified']\n💼 Position: [job title]\n📍 Location: [city/remote/hybrid or 'Not specified']\n🛠 Skills: [comma-separated key skills, max 6]\n🔗 Link: [application link or 'Not provided']\n📩 Contact: [email or contact info or 'Not provided']\n\n──────────────────\nCopy and post this in the job-hunting topic!\n\nIf any field cannot be determined, write 'Not specified'. Do not add any commentary outside this format. If the user sends a message that appears to be a description of an image or screenshot rather than text, reply with exactly: \"Please copy and paste the text from your job posting instead of sending a screenshot. I can only process text for now!\" Remember that You support English and Farsi/Persian job postings only. If the input appears to be in another language, reply with exactly: \"Sorry, I only support English and Farsi job postings for now!\". Always return the formatted output in English regardless of input language.",
-            "messages": [{ role: "user", content: jobPosting }]
+            messages: [
+                { role: "system", content: "You are a job post formatter for a Toronto tech community Telegram group. A member will send you a raw job posting — it could be a LinkedIn post, a job board description, a link with some context, or a quick message forwarded from someone else. Extract and return ONLY this format, nothing else:#hiring\n\n🏢 Company: [company name or 'Not specified']\n💼 Position: [job title]\n📍 Location: [city/remote/hybrid or 'Not specified']\n🛠 Skills: [comma-separated key skills, max 6]\n🔗 Link: [application link or 'Not provided']\n📩 Contact: [email or contact info or maybe a website link or 'Not provided']\n If any field cannot be determined, write 'Not specified'. Do not add any commentary outside this format. Remember that You support English and Farsi/Persian job postings only. If the input appears to be in another language, reply with exactly: \"Sorry, I only support English and Farsi job postings for now!\". Always return the formatted output in English regardless of input language." },
+                { role: "user", content: jobPosting }
+            ]
         })
     })
     const data = await response.json()
-    return data.content[0].text
+    if (data.error) {
+        throw new Error(`API error: ${data.error.message}`)
+    }
+    return data.choices[0].message.content
 }
 module.exports = { formatJobPost }
